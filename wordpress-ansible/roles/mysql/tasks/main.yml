@@ -1,0 +1,70 @@
+---
+- name: Install MySQL
+  apt:
+    name:
+      - mysql-server
+      - mysql-client
+      - python3-mysqldb
+    state: present
+
+- name: Start and enable MySQL
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+
+# Metode sederhana untuk mengatur MySQL di Ubuntu/Debian
+- name: Reset MySQL root password menggunakan command
+  shell: |
+    # Reset password untuk akses
+    mysql --user=root <<EOF
+    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';
+    FLUSH PRIVILEGES;
+    EOF
+  register: mysql_reset
+  failed_when: mysql_reset.rc != 0 and mysql_reset.rc != 1
+  changed_when: mysql_reset.rc == 0
+  ignore_errors: yes
+
+# Metode alternatif jika metode pertama gagal
+- name: Reset MySQL root password dengan metode alternatif
+  shell: |
+    # Menggunakan metode debian-sys-maint
+    DEBIAN_SYS_MAINT_PASSWORD=$(grep -m 1 "password" /etc/mysql/debian.cnf | awk '{print $3}')
+    mysql --user=debian-sys-maint --password="$DEBIAN_SYS_MAINT_PASSWORD" <<EOF
+    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';
+    FLUSH PRIVILEGES;
+    EOF
+  register: mysql_reset_alt
+  failed_when: mysql_reset_alt.rc != 0 and mysql_reset_alt.rc != 1
+  changed_when: mysql_reset_alt.rc == 0
+  when: mysql_reset.rc != 0
+  ignore_errors: yes
+
+# Buat file .my.cnf agar login MySQL selanjutnya lebih mudah
+- name: Buat .my.cnf file
+  copy:
+    dest: /root/.my.cnf
+    content: |
+      [client]
+      user=root
+      password={{ mysql_root_password }}
+      
+      [mysql]
+      user=root
+      password={{ mysql_root_password }}
+    mode: '0600'
+  register: my_cnf_status
+
+# Gunakan password baru untuk membuat database WordPress dan user
+- name: Buat WordPress database dan user
+  shell: |
+    mysql -uroot -p'{{ mysql_root_password }}' <<EOF
+    CREATE DATABASE IF NOT EXISTS {{ mysql_wordpress_db }};
+    CREATE USER IF NOT EXISTS '{{ mysql_wordpress_user }}'@'localhost' IDENTIFIED BY '{{ mysql_wordpress_password }}';
+    GRANT ALL PRIVILEGES ON {{ mysql_wordpress_db }}.* TO '{{ mysql_wordpress_user }}'@'localhost';
+    FLUSH PRIVILEGES;
+    EOF
+  register: db_setup
+  changed_when: db_setup.rc == 0
+  ignore_errors: no

@@ -1,0 +1,17 @@
+---
+# MySQL Settings
+mysql_root_password: "StrongRootPassword123!"
+mysql_wordpress_db: "wordpress_db"
+mysql_wordpress_user: "wordpress_user"
+mysql_wordpress_password: "StrongWPPassword123!"
+
+# WordPress Settings
+wordpress_version: "6.4.2"
+wordpress_site_title: "My WordPress Site"
+wordpress_admin_user: "admin"
+wordpress_admin_password: "StrongAdminPassword123!"
+wordpress_admin_email: "baltickramat@gmail.com"
+wordpress_site_url: "icecream-baltic.com"
+
+# Nginx Settings
+nginx_server_name: "icecream-baltic.com www.icecream-baltic.com"

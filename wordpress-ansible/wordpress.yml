@@ -1,0 +1,10 @@
+---
+- name: Install and configure WordPress with Nginx and MySQL
+  hosts: wordpress
+  become: yes
+  roles:
+    - common
+    - mysql
+    - nginx
+    - php
+    - wordpress

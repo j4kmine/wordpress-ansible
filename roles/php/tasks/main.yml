@@ -1,0 +1,41 @@
+---
+- name: Add PHP repository
+  apt_repository:
+    repo: ppa:ondrej/php
+    state: present
+    update_cache: yes
+
+- name: Install PHP 8.3 and required extensions
+  apt:
+    name:
+      - php8.3-fpm
+      - php8.3-common
+      - php8.3-mysql
+      - php8.3-xml
+      - php8.3-intl
+      - php8.3-curl
+      - php8.3-gd
+      - php8.3-imagick
+      - php8.3-cli
+      - php8.3-dev
+      - php8.3-imap
+      - php8.3-mbstring
+      - php8.3-opcache
+      - php8.3-redis
+      - php8.3-soap
+      - php8.3-zip
+    state: present
+    update_cache: yes
+
+- name: Start and enable PHP-FPM
+  service:
+    name: php8.3-fpm
+    state: started
+    enabled: yes
+
+- name: Update Nginx configuration for PHP 8.3
+  replace:
+    path: /etc/nginx/sites-available/wordpress.conf
+    regexp: 'fastcgi_pass unix:/var/run/php/php.*-fpm\.sock;'
+    replace: 'fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;'
+  notify: reload nginx

@@ -1,0 +1,40 @@
+---
+- name: Install MySQL
+  apt:
+    name:
+      - mysql-server
+      - mysql-client
+      - python3-mysqldb
+    state: present
+
+- name: Start and enable MySQL
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+
+# Metode shell langsung ke MySQL
+- name: Configure MySQL dengan shell commands
+  shell: |
+    # Coba akses tanpa password (metode default Ubuntu)
+    echo "SHOW DATABASES;" | mysql -u root --skip-password 2>/dev/null
+    if [ $? -eq 0 ]; then
+      # Jika berhasil, set password root
+      echo "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}'; FLUSH PRIVILEGES;" | mysql -u root --skip-password
+    else
+      # Coba dengan metode debian-sys-maint
+      DEBIAN_SYS_MAINT_PASSWORD=$(grep -m 1 "password" /etc/mysql/debian.cnf | awk '{print $3}')
+      echo "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}'; FLUSH PRIVILEGES;" | mysql -u debian-sys-maint -p"$DEBIAN_SYS_MAINT_PASSWORD"
+    fi
+    # Buat file .my.cnf untuk akses berikutnya
+    echo -e "[client]\nuser=root\npassword={{ mysql_root_password }}" > /root/.my.cnf
+    chmod 600 /root/.my.cnf
+    # Buat database dan user WordPress
+    echo "CREATE DATABASE IF NOT EXISTS {{ mysql_wordpress_db }}; CREATE USER IF NOT EXISTS '{{ mysql_wordpress_user }}'@'localhost' IDENTIFIED BY '{{ mysql_wordpress_password }}'; GRANT ALL PRIVILEGES ON {{ mysql_wordpress_db }}.* TO '{{ mysql_wordpress_user }}'@'localhost'; FLUSH PRIVILEGES;" | mysql -u root -p'{{ mysql_root_password }}'
+    exit 0
+  args:
+    executable: /bin/bash
+  register: mysql_setup
+  changed_when: mysql_setup.rc == 0
+  failed_when: false
+  no_log: false  # Set to true in production for security

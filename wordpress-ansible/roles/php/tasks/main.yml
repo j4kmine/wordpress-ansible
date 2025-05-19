@@ -1,0 +1,33 @@
+---
+- name: Install PHP and required extensions
+  apt:
+    name:
+      - php8.1-fpm
+      - php8.1-common
+      - php8.1-mysql
+      - php8.1-xml
+      - php8.1-xmlrpc
+      - php8.1-curl
+      - php8.1-gd
+      - php8.1-imagick
+      - php8.1-cli
+      - php8.1-dev
+      - php8.1-imap
+      - php8.1-mbstring
+      - php8.1-opcache
+      - php8.1-soap
+      - php8.1-zip
+      - php8.1-intl
+    state: present
+
+- name: Start and enable PHP-FPM
+  service:
+    name: php8.1-fpm
+    state: started
+    enabled: yes
+
+- name: Configure PHP for WordPress
+  template:
+    src: php.ini.j2
+    dest: /etc/php/8.1/fpm/php.ini
+  notify: restart php-fpm
